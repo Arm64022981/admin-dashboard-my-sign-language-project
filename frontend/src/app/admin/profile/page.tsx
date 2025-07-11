@@ -159,14 +159,17 @@ export default function AdminProfilePage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
+    <div className="relative min-h-screen w-full overflow-hidden bg-white">
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-white" />
         <div
-          className="absolute inset-0 bg-blue-900 admin-profile-clip"
+          className="absolute inset-0 z-0"
+          style={{
+            background: "linear-gradient(45deg, white 50%,rgb(30, 61, 147) 50%)",
+          }}
         />
       </div>
-      <div className="relative z-10 min-h-screen flex items-center justify-center px-6">
+
+      <div className="relative z-10 flex flex-col md:flex-row items-center justify-center min-h-screen px-6 space-y-6 md:space-y-0 md:space-x-6">
         <AdminInfoCard />
         <AdminForm formData={formData} onChange={handleChange} onSubmit={handleSubmit} />
       </div>
