@@ -26,7 +26,8 @@ export default function ReportsPage() {
     const fetchReports = async () => {
       try {
         setLoading(true);
-        const response = await fetch("http://localhost:5000/api/reports");
+        const response = await fetch("https://admin-dashboard-my-sign-language-project-yhn3.onrender.com/api/reports");
+
         if (!response.ok) {
           throw new Error("Failed to fetch reports");
         }

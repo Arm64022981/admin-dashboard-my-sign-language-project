@@ -27,7 +27,7 @@ interface StatsCardProps {
   textColor: string;
 }
 
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "https://admin-dashboard-my-sign-language-project-yhn3.onrender.com/api";
 
 const ENDPOINTS = {
   NURSES: `${API_BASE_URL}/nurses`,

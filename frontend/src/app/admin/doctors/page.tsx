@@ -19,7 +19,7 @@ interface Doctor {
   department_id: number;
 }
 
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "https://admin-dashboard-my-sign-language-project-yhn3.onrender.com/api";
 
 const SWAL_CONFIG = {
   customClass: {

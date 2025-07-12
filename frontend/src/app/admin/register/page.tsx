@@ -56,7 +56,7 @@ export default function Register() {
       return;
     }
 
-    const endpoint = "http://127.0.0.1:5000/api/register";
+    const endpoint = "https://admin-dashboard-my-sign-language-project-yhn3.onrender.com/api/register";
 
     try {
       const response = await fetch(endpoint, {
