@@ -15,29 +15,35 @@ def get_doctor_count():
 
 @doctor_bp.route('/doctors', methods=['GET'])
 def get_doctors():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT 
-            doctor_id, user_id, department_id, fullname, 
-            gender, birthdate, contact_number, email, 
-            department, role
-        FROM doctors;
-    """)
-    doctors = cur.fetchall()
-    conn.close()
-    return jsonify([{
-        'doctor_id': d[0],  
-        'user_id': d[1],
-        'department_id': d[2],
-        'fullname': d[3],
-        'gender': d[4],
-        'birthdate': d[5],
-        'contact_number': d[6],
-        'email': d[7],
-        'department': d[8],
-        'role': d[9]
-    } for d in doctors])
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT 
+                doctor_id, user_id, department_id, fullname, 
+                gender, birthdate, contact_number, email, 
+                department, role
+            FROM doctors;
+        """)
+        doctors = cur.fetchall()
+        conn.close()
+        return jsonify([{
+            'doctor_id': d[0],  
+            'user_id': d[1],
+            'department_id': d[2],
+            'fullname': d[3],
+            'gender': d[4],
+            'birthdate': d[5],
+            'contact_number': d[6],
+            'email': d[7],
+            'department': d[8],
+            'role': d[9]
+        } for d in doctors])
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())  
+        return jsonify({"error": "Internal Server Error", "message": str(e)}), 500
+
 
 @doctor_bp.route('/doctors/<int:doctor_id>', methods=['DELETE'])
 def delete_doctor(doctor_id):
