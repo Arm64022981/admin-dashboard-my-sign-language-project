@@ -530,14 +530,6 @@ export default function NurseDashboardPage() {
           />
         )}
       </div>
-      <FloatingRefreshButton onRefresh={handleRefresh} loading={loading} />
-      <EditNurseModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        nurse={editingNurse}
-        onSave={handleSaveEdit}
-        onChange={setEditingNurse}
-      />
     </div>
   );
 }

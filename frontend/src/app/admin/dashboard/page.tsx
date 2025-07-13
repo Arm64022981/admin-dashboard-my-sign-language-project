@@ -17,6 +17,7 @@ import { HiSparkles } from "react-icons/hi";
 import Swal from "sweetalert2";
 
 const API_BASE_URL = "https://admin-dashboard-my-sign-language-project-yhn3.onrender.com/api";
+
 const ENDPOINTS = {
   PATIENTS: `${API_BASE_URL}/patients`,
   DOCTORS_COUNT: `${API_BASE_URL}/doctors/count`,
