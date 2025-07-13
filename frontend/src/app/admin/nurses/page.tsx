@@ -211,7 +211,7 @@ const EditNurseModal: React.FC<EditNurseModalProps> = ({ isOpen, onClose, nurse,
             </div>
           </DialogTitle>
         </DialogHeader>
-        {nurse && (
+        {nurse ? (
           <div className="mt-6">
             <div className="space-y-6 bg-indigo-900/30 p-6 rounded-xl border border-indigo-500/30">
               <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
@@ -292,6 +292,8 @@ const EditNurseModal: React.FC<EditNurseModalProps> = ({ isOpen, onClose, nurse,
               </Button>
             </div>
           </div>
+        ) : (
+          <p className="text-center text-white/70">ไม่พบข้อมูลพยาบาล</p>
         )}
       </div>
     </DialogContent>
@@ -321,52 +323,16 @@ export default function NurseDashboardPage() {
     },
   ];
 
-  const fetchNurses = async (): Promise<Nurse[]> => {
-    const response = await fetch(ENDPOINTS.NURSES);
-    if (!response.ok) throw new Error("Failed to fetch nurses");
-    return response.json();
-  };
-
-  const fetchNurseCount = async (): Promise<number> => {
-    const response = await fetch(ENDPOINTS.NURSES_COUNT);
-    if (!response.ok) throw new Error("Failed to fetch nurse count");
-    const data = await response.json();
-    return data.nurseCount;
-  };
-
-  const deleteNurse = async (id: number): Promise<void> => {
-    const response = await fetch(`${ENDPOINTS.NURSES}/${id}`, { method: "DELETE" });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to delete nurse");
-    }
-  };
-
-  const updateNurse = async (nurse: Nurse): Promise<void> => {
-    const response = await fetch(`${ENDPOINTS.NURSES}/${nurse.nurses_id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fullname: nurse.fullname.trim(),
-        email: nurse.email.trim(),
-        contact_number: nurse.contact_number.trim(),
-        department: nurse.department.trim(),
-      }),
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to update nurse");
-    }
-  };
-
-  const handleRefresh = async () => {
+  const fetchNurses = async () => {
     setLoading(true);
     try {
-      const [nursesData, nurseCount] = await Promise.all([fetchNurses(), fetchNurseCount()]);
-      setNurses(nursesData);
-      setStats({ nurseCount });
+      const response = await fetch(ENDPOINTS.NURSES);
+      if (!response.ok) throw new Error("Failed to fetch nurses");
+      const data = await response.json();
+      setNurses(data);
+      setStats({ nurseCount: data.length });
     } catch (error) {
-      console.error("Error refreshing data:", error);
+      console.error("Error fetching nurses:", error);
       Swal.fire({
         ...SWAL_CONFIG,
         icon: "error",
@@ -378,13 +344,88 @@ export default function NurseDashboardPage() {
     }
   };
 
+  const deleteNurse = async (id: number) => {
+    const result = await Swal.fire({
+      ...SWAL_CONFIG,
+      title: "ยืนยันการลบ",
+      text: "คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลพยาบาลนี้?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "ใช่, ลบเลย!",
+      cancelButtonText: "ยกเลิก",
+      background: "#fff",
+      customClass: {
+        confirmButton: "bg-red-500 hover:bg-red-600 rounded-lg px-6 py-2",
+        cancelButton: "bg-gray-300 hover:bg-gray-400 rounded-lg px-6 py-2",
+      },
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const response = await fetch(`${ENDPOINTS.NURSES}/${id}`, { method: "DELETE" });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete nurse");
+      }
+      setNurses((prev) => prev.filter((n) => n.nurses_id !== id));
+      setStats((prev) => ({ ...prev, nurseCount: prev.nurseCount - 1 }));
+      Swal.fire({
+        ...SWAL_CONFIG,
+        icon: "success",
+        title: "ลบสำเร็จ!",
+        text: "ข้อมูลพยาบาลถูกลบเรียบร้อยแล้ว",
+      });
+    } catch (error) {
+      console.error("Error deleting nurse:", error);
+      Swal.fire({
+        ...SWAL_CONFIG,
+        icon: "error",
+        title: "เกิดข้อผิดพลาด!",
+        text: "ไม่สามารถลบข้อมูลพยาบาลได้",
+      });
+    }
+  };
+
+  const updateNurse = async (nurse: Nurse) => {
+    try {
+      const response = await fetch(`${ENDPOINTS.NURSES}/${nurse.nurses_id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nurses_id: nurse.nurses_id,
+          fullname: nurse.fullname.trim(),
+          email: nurse.email.trim(),
+          contact_number: nurse.contact_number.trim(),
+          department: nurse.department.trim(),
+        }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update nurse");
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("Error in updateNurse:", error);
+      throw error;
+    }
+  };
+
   const handleEdit = (nurse: Nurse) => {
-    setEditingNurse(nurse);
+    setEditingNurse({ ...nurse });
     setIsModalOpen(true);
   };
 
   const handleSaveEdit = async () => {
-    if (!editingNurse) return;
+    if (!editingNurse) {
+      Swal.fire({
+        ...SWAL_CONFIG,
+        icon: "error",
+        title: "เกิดข้อผิดพลาด",
+        text: "ไม่มีข้อมูลพยาบาลที่เลือก",
+      });
+      return;
+    }
 
     if (
       !editingNurse.fullname.trim() ||
@@ -392,100 +433,62 @@ export default function NurseDashboardPage() {
       !editingNurse.contact_number.trim() ||
       !editingNurse.department.trim()
     ) {
-      return Swal.fire({
+      Swal.fire({
         ...SWAL_CONFIG,
         icon: "error",
         title: "เกิดข้อผิดพลาด",
         text: "กรุณากรอกข้อมูลให้ครบทุกช่อง",
       });
+      return;
     }
 
     const isValidEmail = (email: string) => /[^@]+@[^@]+\.[^@]+/.test(email);
-    const isValidPhone = (phone: string) => /^[0-9]{10}$/.test(phone);
-
     if (!isValidEmail(editingNurse.email.trim())) {
-      return Swal.fire({
+      Swal.fire({
         ...SWAL_CONFIG,
         icon: "error",
         title: "เกิดข้อผิดพลาด",
         text: "รูปแบบอีเมลไม่ถูกต้อง",
       });
+      return;
     }
 
+    const isValidPhone = (phone: string) => /^[0-9]{10}$/.test(phone);
     if (!isValidPhone(editingNurse.contact_number.trim())) {
-      return Swal.fire({
+      Swal.fire({
         ...SWAL_CONFIG,
         icon: "error",
         title: "เกิดข้อผิดพลาด",
         text: "เบอร์โทรต้องเป็นตัวเลข 10 หลัก",
       });
+      return;
     }
 
     try {
-      await updateNurse(editingNurse);
+      const updatedNurse = await updateNurse(editingNurse);
       setNurses((prev) =>
-        prev.map((n) => (n.nurses_id === editingNurse.nurses_id ? { ...editingNurse } : n))
+        prev.map((n) => (n.nurses_id === updatedNurse.nurses_id ? updatedNurse : n))
       );
       setIsModalOpen(false);
+      setEditingNurse(null);
       Swal.fire({
         ...SWAL_CONFIG,
         icon: "success",
         title: "สำเร็จ",
         text: "บันทึกการแก้ไขพยาบาลเรียบร้อยแล้ว",
       });
-    } catch (error) {
-      console.error("Error updating nurse:", error);
+    } catch (error: any) {
       Swal.fire({
         ...SWAL_CONFIG,
         icon: "error",
         title: "เกิดข้อผิดพลาด",
-        text: "ไม่สามารถบันทึกข้อมูลพยาบาลได้",
+        text: error.message || "ไม่สามารถบันทึกข้อมูลพยาบาลได้",
       });
     }
   };
 
-  const handleDelete = (id: number) => {
-    Swal.fire({
-      ...SWAL_CONFIG,
-      title: "ยืนยันการลบ",
-      text: "คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลพยาบาลนี้?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "ยืนยัน",
-      cancelButtonText: "ยกเลิก",
-      reverseButtons: true,
-      background: "#fff",
-      customClass: {
-        confirmButton: "bg-red-500 hover:bg-red-600 rounded-lg px-6 py-2",
-        cancelButton: "bg-gray-300 hover:bg-gray-400 rounded-lg px-6 py-2",
-      },
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          await deleteNurse(id);
-          setNurses((prev) => prev.filter((n) => n.nurses_id !== id));
-          setStats((prev) => ({ ...prev, nurseCount: prev.nurseCount - 1 }));
-          Swal.fire({
-            ...SWAL_CONFIG,
-            icon: "success",
-            title: "ลบแล้ว!",
-            text: "ข้อมูลพยาบาลถูกลบเรียบร้อยแล้ว",
-          });
-        } catch (error) {
-          console.error("Error deleting nurse:", error);
-          Swal.fire({
-            ...SWAL_CONFIG,
-            icon: "error",
-            title: "เกิดข้อผิดพลาด!",
-            text: "ไม่สามารถลบข้อมูลพยาบาลได้",
-          });
-        }
-      }
-    });
-  };
-
   useEffect(() => {
-    handleRefresh();
+    fetchNurses();
   }, []);
 
   return (
@@ -503,7 +506,7 @@ export default function NurseDashboardPage() {
               </div>
             </div>
             <Button
-              onClick={handleRefresh}
+              onClick={fetchNurses}
               disabled={loading}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl px-6 py-2.5 font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 text-white"
             >
@@ -526,10 +529,21 @@ export default function NurseDashboardPage() {
           <NurseTable
             nurses={filteredNurses}
             onEdit={handleEdit}
-            onDelete={handleDelete}
+            onDelete={deleteNurse}
           />
         )}
+        <EditNurseModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingNurse(null);
+          }}
+          nurse={editingNurse}
+          onSave={handleSaveEdit}
+          onChange={setEditingNurse}
+        />
       </div>
+      <FloatingRefreshButton onRefresh={fetchNurses} loading={loading} />
     </div>
   );
 }
