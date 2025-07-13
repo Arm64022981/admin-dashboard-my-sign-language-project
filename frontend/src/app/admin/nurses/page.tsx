@@ -543,7 +543,6 @@ export default function NurseDashboardPage() {
           onChange={setEditingNurse}
         />
       </div>
-      <FloatingRefreshButton onRefresh={fetchNurses} loading={loading} />
     </div>
   );
 }
